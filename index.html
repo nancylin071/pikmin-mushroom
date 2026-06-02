@@ -507,8 +507,9 @@ function attachRoom(room) {
       ensureMinCards();
       pushToFirebase();
     } else {
-      // 從 Firebase 收到資料
+      // 從 Firebase 收到資料，依 sortOrder 排列
       const incoming = Object.values(data);
+      incoming.sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
       // 只在非自己寫入時更新（避免游標跳動）
       if (!ignoreNextRemote) {
         cards = incoming;
@@ -548,7 +549,7 @@ let _idCounter = Date.now();
 function uid() { return 'c' + (++_idCounter); }
 
 function emptyCard() {
-  return { id: uid(), name: '', killTs: null, respawnTs: null };
+  return { id: uid(), name: '', killTs: null, respawnTs: null, sortOrder: 999 };
 }
 
 function ensureMinCards() {
@@ -582,6 +583,8 @@ function getSortKey(card) {
 
 function sortCards() {
   cards.sort((a, b) => getSortKey(a) - getSortKey(b));
+  // 排序後把位置寫進每張卡片，讓朋友那端也能依此排列
+  cards.forEach((c, i) => { c.sortOrder = i; });
   pushToFirebase();
   renderAll();
 }
